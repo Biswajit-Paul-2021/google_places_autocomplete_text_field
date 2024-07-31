@@ -2,15 +2,13 @@ library google_places_autocomplete_text_field;
 
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
-import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
-import 'package:rxdart/rxdart.dart';
-
 import 'package:google_places_autocomplete_text_field/model/place_details.dart';
 import 'package:google_places_autocomplete_text_field/model/prediction.dart';
+import 'package:rxdart/rxdart.dart';
 
 class GooglePlacesAutoCompleteTextFormField extends StatefulWidget {
   final String? initialValue;
@@ -74,6 +72,8 @@ class GooglePlacesAutoCompleteTextFormField extends StatefulWidget {
   final TextStyle? predictionsStyle;
   final OverlayContainer? overlayContainer;
   final String? proxyURL;
+  final Function(BuildContext context, Prediction p)? itemBuilder;
+  final Function(BuildContext context, int index)? separateBuilder;
 
   const GooglePlacesAutoCompleteTextFormField({
     super.key,
@@ -140,14 +140,16 @@ class GooglePlacesAutoCompleteTextFormField extends StatefulWidget {
     this.mouseCursor,
     this.contextMenuBuilder,
     this.validator,
+    this.itemBuilder,
+    this.separateBuilder,
   });
 
   @override
   State<GooglePlacesAutoCompleteTextFormField> createState() =>
-      _GooglePlacesAutoCompleteTextFormFieldState();
+      GooglePlacesAutoCompleteTextFormFieldState();
 }
 
-class _GooglePlacesAutoCompleteTextFormFieldState
+class GooglePlacesAutoCompleteTextFormFieldState
     extends State<GooglePlacesAutoCompleteTextFormField> {
   final subject = PublishSubject<String>();
   OverlayEntry? _overlayEntry;
@@ -177,6 +179,11 @@ class _GooglePlacesAutoCompleteTextFormFieldState
     }
 
     super.initState();
+  }
+
+  void clearData() {
+    widget.textEditingController.clear();
+    removeOverlay();
   }
 
   @override
@@ -311,8 +318,10 @@ class _GooglePlacesAutoCompleteTextFormFieldState
   }
 
   Widget get _overlayChild {
-    return ListView.builder(
+    return ListView.separated(
       padding: EdgeInsets.zero,
+      separatorBuilder: (context, index) =>
+          widget.separateBuilder?.call(context, index) ?? const Divider(),
       shrinkWrap: true,
       itemCount: allPredictions.length,
       itemBuilder: (BuildContext context, int index) => InkWell(
@@ -326,13 +335,14 @@ class _GooglePlacesAutoCompleteTextFormFieldState
             removeOverlay();
           }
         },
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          child: Text(
-            allPredictions[index].description!,
-            style: widget.predictionsStyle ?? widget.style,
-          ),
-        ),
+        child: widget.itemBuilder?.call(context, allPredictions[index]) ??
+            Container(
+              padding: const EdgeInsets.all(10),
+              child: Text(
+                allPredictions[index].description!,
+                style: widget.predictionsStyle ?? widget.style,
+              ),
+            ),
       ),
     );
   }

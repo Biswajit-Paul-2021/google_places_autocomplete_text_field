@@ -6,6 +6,9 @@ void main() {
   runApp(const MyApp());
 }
 
+final GlobalKey<GooglePlacesAutoCompleteTextFormFieldState> stateKey =
+    GlobalKey<GooglePlacesAutoCompleteTextFormFieldState>();
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -33,10 +36,9 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final _yourGoogleAPIKey = 'foo-bar-baz';
+  final _yourGoogleAPIKey = 'AIzaSss';
 
   // only needed if you build for the web
-  final _yourProxyURL = 'https://your-proxy.com/';
 
   final _textController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -57,13 +59,26 @@ class _MyHomePageState extends State<MyHomePage> {
               key: _formKey,
               autovalidateMode: _autovalidateMode,
               child: GooglePlacesAutoCompleteTextFormField(
+                key: stateKey,
+                itemBuilder: (context, p) {
+                  return ListTile(
+                    title: Text(p.description ?? ""),
+                  );
+                },
                 textEditingController: _textController,
                 googleAPIKey: _yourGoogleAPIKey,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Enter your address',
                   labelText: 'Address',
-                  labelStyle: TextStyle(color: Colors.purple),
-                  border: OutlineInputBorder(),
+                  labelStyle: const TextStyle(color: Colors.purple),
+                  border: const OutlineInputBorder(),
+                  suffix: IconButton(
+                    onPressed: () {
+                      stateKey.currentState!.clearData();
+                    },
+                    icon: const Icon(Icons.clear),
+                    padding: EdgeInsets.zero,
+                  ),
                 ),
                 validator: (value) {
                   if (value!.isEmpty) {
@@ -74,13 +89,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 // proxyURL: _yourProxyURL,
                 maxLines: 1,
                 overlayContainer: (child) => Material(
-                  elevation: 1.0,
-                  color: Colors.green,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   child: child,
                 ),
                 getPlaceDetailWithLatLng: (prediction) {
-                  print('placeDetails${prediction.lng}');
+                  print(prediction.toJson());
                 },
                 itmClick: (Prediction prediction) =>
                     _textController.text = prediction.description!,
